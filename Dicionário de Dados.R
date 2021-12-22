@@ -2,9 +2,11 @@
 library('openxlsx')
 library('dplyr')
 library('tidyverse')
+library('stringr')
+library('tidyr')
 
 #### Lendo a base de dados ####
-df=read.xlsx("C:\\Users\\francisco.ribeiro\\Desktop\\12RC 13_4_2 PAASA (31072017)-2.xlsx")
+df=read.xlsx("C:\\Users\\franc\\OneDrive\\Ãƒrea de Trabalho\\a.xlsx")
 
 #### Listando as variaveis e suas respectivas tipologias ####
 Dados <- function(df) {
@@ -37,7 +39,6 @@ for (i in 1:ncol(df)){
 #### Levels em todas as variaveis do data frame ####
 df2 = sapply(df, levels)
 
-
 #### Tranformando a lista em data frame ####
 df3 <- df2 %>%
   #unlist(recursive = FALSE) %>% 
@@ -53,10 +54,19 @@ df4 = df3 %>%
   summarize(Estimativa_Caracteres = max (noChar, na.rm=TRUE))%>%
   rename(col_name = name)
 
+#### Numerando cada nivel de variavel####
+df3 = df3 %>%
+  group_by(name) %>%
+  mutate(id_nivel=row_number())
+
+#### Concatenando os identificadores aos niveis de variaveis ####
+df3 <- df3 %>%
+  mutate(value = paste(id_nivel, value, sep = " - "))
+
 #### Agupando os niveis de variaveis em linhas ####
 df3 = df3 %>%
   group_by(name) %>%
-  summarise(value = paste(value, collapse = " / "))%>%
+  summarise(value = paste(value, collapse = " ; "))%>%
   rename(col_name = name)
 
 #### Unificando os data frames ####
@@ -65,6 +75,24 @@ df5 = left_join(df1, df4, by="col_name")
 #### Fim ####
 df_final = left_join(df5, df3, by="col_name")
 
-write.xlsx(df_final,"C:\\Users\\francisco.ribeiro\\Desktop\\Dicionário.xlsx")
+#### inserindo campos ####
+df_final = df_final%>%
+  add_column(hub="",
+             produto="",
+             planilha="",
+             codigo="",
+             casas_decimais="",
+             requerido="",
+             multipla_resposta="",
+             descricao="",
+             regra_validacao="")
+
+#### Ordenando campos ####
+df_final = df_final %>%
+  select(col_index, hub, produto, planilha, codigo, col_name, col_class, 
+         Estimativa_Caracteres, casas_decimais, requerido, multipla_resposta,
+         descricao, regra_validacao, value)
+
+write.xlsx(df_final,"C:\\Users\\franc\\OneDrive\\Area de Trabalho\\dicionario.xlsx")
 
 
